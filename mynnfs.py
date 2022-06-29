@@ -702,7 +702,7 @@ class Model:
         self.layers.append(layer)
 
     # Set loss and optimizer
-    def set(self, *, loss, optimizer, accuracy):
+    def set(self, *, loss= None, optimizer=None, accuracy=None):
         if loss is not None:
             self.loss = loss
         if optimizer is not None:
