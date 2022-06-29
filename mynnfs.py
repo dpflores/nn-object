@@ -54,6 +54,10 @@ class Layer_Dense:
         # Gradients on values
         self.dinputs = np.dot(dvalues, self.weights.T)
 
+    # Retrieve layer parameters
+    def get_parameters(self):
+        return self.weights, self.biases
+
 
 # Dropout 
 class Layer_Dropout:
@@ -959,4 +963,16 @@ class Model:
             f'acc: {validation_accuracy:.3f} , ' +
             f'loss: {validation_loss:.3f} ' )
 
+    # Retrieves and returns parameters of trainable layers
+    def get_parameters(self):
+        
+        # Create a list of parameters
+        parameters = []
+
+        # Iterable trainable layers and get their parameters
+        for layer in self.trainable_layers:
+            parameters.append(layer.get_parameters())
+        
+        # Return a list
+        return parameters
 
