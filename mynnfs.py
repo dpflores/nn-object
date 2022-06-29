@@ -58,6 +58,11 @@ class Layer_Dense:
     def get_parameters(self):
         return self.weights, self.biases
 
+    # Set weights and biases in a layer instance
+    def set_parameters(self, weights, biases):
+        self.weights = weights
+        self.biases = biases
+
 
 # Dropout 
 class Layer_Dropout:
@@ -698,9 +703,12 @@ class Model:
 
     # Set loss and optimizer
     def set(self, *, loss, optimizer, accuracy):
-        self.loss = loss
-        self.optimizer = optimizer
-        self.accuracy = accuracy
+        if loss is not None:
+            self.loss = loss
+        if optimizer is not None:
+            self.optimizer = optimizer
+        if accuracy is not None:
+            self.accuracy = accuracy
     # The use of the asterisk in the parameter definitions notes that the subsequent parameters ( loss
     # and optimizer in this case) are keyword arguments. Since they have no default value assigned,
     # they are required keyword arguments, which means that they have to be passed by names and
@@ -748,7 +756,9 @@ class Model:
         
 
             # Update loss objects with trainable layers
-            self.loss.remember_trainable_layers(self.trainable_layers)
+            if self. loss is not None:
+                self.loss.remember_trainable_layers(self.trainable_layers)
+
         # If output activation is Softmax and
         # loss function is Categorical Cross-Entropy
         # create an object of combined activation
@@ -975,4 +985,12 @@ class Model:
         
         # Return a list
         return parameters
+
+    # Update the model with new parameters
+    def set_parameters(self, parameters):
+
+        # Iterate over the parameters and layers
+        # and update each layer with each set of parameters
+        for parameter_set, layer in zip(parameters, self.trainable_layers):
+            layer.set_parameters(*parameter_set)
 
