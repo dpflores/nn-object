@@ -998,7 +998,7 @@ class Model:
         # Open a file in the binary-write mode
         # and save parameters to it
         with open(path, 'wb') as f:
-            pickle.dumb(self.get_parameters(), f)
+            pickle.dump(self.get_parameters(), f)
     
     # Loads the weights and updates a model instance with them
     def load_parameters(self, path):
