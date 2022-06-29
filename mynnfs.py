@@ -2,6 +2,8 @@ import numpy as np
 # Using pickle to serialize objects into a binary representation 
 # (we can save python objects in a file)
 import pickle
+# Modelue to copy the modul and save it to a file
+import copy
 
 #  LAYERS 
 class Layer_Dense:
@@ -1007,3 +1009,31 @@ class Model:
         # load weights and update tranable layers
         with open(path, 'rb') as f:
             self.set_parameters(pickle.load(f))
+
+    # Saves the model
+    def save(self, path):
+
+        # Make a deep copy of current model instance
+        model = copy.deepcopy(self)
+
+        # Reset accumulated values in loss and accuracy objects
+        model.loss.new_pass()
+        model.accuracy.new_pass()
+
+        # Remove data form input layer
+        # and gradients from the loss object
+        model.input_layer.__dict__.pop('output', None)
+        model.loss.__dict__.pop('dinputs', None)
+        # with the __dict__ we can remove that instance of the class, the default value that return
+        # if they dont exist is None
+
+        # For each layer remove inputs, output and dinputs properties
+        for layer in model.layers:
+            for property in ['inputs', 'output', 'dinputs', 'dweights', 'dbiases']:
+                layer.__dict__.pop(property, None)
+
+        # With all cleaned, we can save the model object
+
+        # Open a file in the binary-write mode and save the model
+        with open(path, 'wb') as f:
+            pickle.dump(model, f)
