@@ -1037,3 +1037,16 @@ class Model:
         # Open a file in the binary-write mode and save the model
         with open(path, 'wb') as f:
             pickle.dump(model, f)
+
+    # Loads and return model
+    # We use the static decorator, since it can be used to run class methods without initialization
+    # So the self does not exist
+    @staticmethod
+    def load(path):
+
+        # Open file in the binary-read mode, load model
+        with open(path, 'rb') as f:
+            model = pickle.load(f)
+
+        # Return the model
+        return model

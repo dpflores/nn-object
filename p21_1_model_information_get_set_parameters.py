@@ -1,4 +1,4 @@
-# Sometimes we'd like to take closer look into model paramteres to see if we have
+# Sometimes we'd like to take closer look into model parameteres to see if we have
 # dead or exploding neurons.
 
 import numpy as np
