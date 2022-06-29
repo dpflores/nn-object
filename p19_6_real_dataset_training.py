@@ -1,4 +1,4 @@
-# Lets train a model with teh real dataset
+# Lets train a model with the real dataset
 import numpy as np
 import cv2
 import os

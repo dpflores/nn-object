@@ -599,7 +599,82 @@ class Optimizer_Adam:
         self.iterations += 1
 
 
+# Common accuracy class
+class Accuracy:
 
+    # Calculates an accuracy
+    # given predictions and ground truth values
+    def calculate(self, predictions, y):
+
+        # Get comparison results 
+        comparisons = self.compare(predictions, y)
+
+        # Calculate an accuracy
+        accuracy = np.mean(comparisons)
+
+        # Add accumulated sum of matching values and sample count
+        self.accumulated_sum += np.sum(comparisons)
+        self.accumulated_count += len(comparisons)
+
+        # Return accuracy
+        return accuracy
+
+    # Calculates accumulated accuracy
+    def calculate_accumulated (self):
+        # Calculate an accuracy
+        accuracy = self.accumulated_sum / self.accumulated_count
+        # Return the data and regularization losses
+        return accuracy
+
+    # Reset variables for accumulated accuracy
+    def new_pass ( self ):
+        self.accumulated_sum = 0
+        self.accumulated_count = 0
+
+
+# Accuracy calculation for regresion model
+class Accuracy_Regression(Accuracy):
+
+    def __init__(self):
+        
+        # Create precision property
+        self.precision = None
+
+    # Calculates precision value
+    # based on passed in ground truth
+    def init(self, y, reinit=False):
+        if self.precision is None or reinit:
+            self.precision = np.std(y) / 250
+    
+    # Compares predictions to the ground truth tables
+    def compare(self, predicitions, y):
+        return np.absolute(predicitions - y) < self.precision
+
+
+# Accuracy calculation for binary logistic clasification model
+class Accuracy_Binary(Accuracy):
+
+    # No initialization is needed
+    def init(self, y):
+        pass
+    # Compares predictions to the ground truth values 
+    def compare(self, predictions, y):
+        if len(y.shape) == 2:
+            y = np.argmax(y, axis=1)
+        return predictions == y
+
+# Accuracy calculation for classification model 
+class Accuracy_Categorical(Accuracy):
+
+    # No initialization is needed
+    def init(self, y):
+        pass
+
+    # Compares predictions to the ground truth values 
+    def compare(self, predictions, y):
+        if len(y.shape) == 2:
+            y = np.argmax(y, axis=1)
+        return predictions == y
 
 
 # Model class
@@ -783,44 +858,9 @@ class Model:
                 
             # If there is the validation data
             if validation_data is not None :
+                # The starred expression unpacks the validation data
+                self.evaluate(*validation_data, batch_size=batch_size)
 
-                # Reset accumulated values in loss
-                # and accuracy objects
-                self.loss.new_pass()
-                self.accuracy.new_pass()
-
-                # Iterate over steps
-                for step in range(validation_steps):
-                    
-                    # If batch size is not set -
-                    # train using one step and full dataset
-                    if batch_size is None :
-                        batch_X = X_val
-                        batch_y = y_val
-                        # Otherwise slice a batch
-                    else :
-                        batch_X = X_val[step*batch_size:(step + 1)*batch_size]
-                        batch_y = y_val[step*batch_size:(step + 1)*batch_size]
-
-                    # Perform the forward pass
-                    output = self.forward(batch_X, training=False )
-
-                    # Calculate the loss
-                    self.loss.calculate(output, batch_y)
-
-                    # Get predictions and calculate an accuracy
-                    predictions = self.output_layer_activation.predictions(output)
-                    self.accuracy.calculate(predictions, batch_y)
-
-                # Get and print validation loss and accuracy
-                validation_loss = self.loss.calculate_accumulated()
-                validation_accuracy = self.accuracy.calculate_accumulated()
-
-                # Print a summary
-                print(f'validation, ' +
-                    f'acc: {validation_accuracy:.3f} , ' +
-                    f'loss: {validation_loss:.3f} ' )
- 
     # Perform forward pass
     def forward(self, X, training):
         
@@ -869,80 +909,54 @@ class Model:
         for layer in reversed(self.layers):
             layer.backward(layer.next.dinputs)
 
+    def evaluate(self, X_val, y_val, *, batch_size=None):
+        # Default value if batch size is not being set
+        validation_steps = 1
 
-# Common accuracy class
-class Accuracy:
+        # Calculate number of steps
+        if batch_size is not None:
+            validation_steps = len(X_val) // batch_size
+            # Dividing rounds down. If there are some remaining
+            # data, but not a full batch, this won't include it
+            # Add `1` to include this not full batch
+            if validation_steps * batch_size < len(X_val):
+                validation_steps += 1
 
-    # Calculates an accuracy
-    # given predictions and ground truth values
-    def calculate(self, predictions, y):
+        # Reset accumulated values in loss
+        # and accuracy objects
+        self.loss.new_pass()
+        self.accuracy.new_pass()
 
-        # Get comparison results 
-        comparisons = self.compare(predictions, y)
+        # Iterate over steps
+        for step in range(validation_steps):
+            
+            # If batch size is not set -
+            # train using one step and full dataset
+            if batch_size is None :
+                batch_X = X_val
+                batch_y = y_val
+                # Otherwise slice a batch
+            else :
+                batch_X = X_val[step*batch_size:(step + 1)*batch_size]
+                batch_y = y_val[step*batch_size:(step + 1)*batch_size]
 
-        # Calculate an accuracy
-        accuracy = np.mean(comparisons)
+            # Perform the forward pass
+            output = self.forward(batch_X, training=False )
 
-        # Add accumulated sum of matching values and sample count
-        self.accumulated_sum += np.sum(comparisons)
-        self.accumulated_count += len(comparisons)
+            # Calculate the loss
+            self.loss.calculate(output, batch_y)
 
-        # Return accuracy
-        return accuracy
+            # Get predictions and calculate an accuracy
+            predictions = self.output_layer_activation.predictions(output)
+            self.accuracy.calculate(predictions, batch_y)
 
-    # Calculates accumulated accuracy
-    def calculate_accumulated (self):
-        # Calculate an accuracy
-        accuracy = self.accumulated_sum / self.accumulated_count
-        # Return the data and regularization losses
-        return accuracy
+        # Get and print validation loss and accuracy
+        validation_loss = self.loss.calculate_accumulated()
+        validation_accuracy = self.accuracy.calculate_accumulated()
 
-    # Reset variables for accumulated accuracy
-    def new_pass ( self ):
-        self.accumulated_sum = 0
-        self.accumulated_count = 0
-
-
-# Accuracy calculation for regresion model
-class Accuracy_Regression(Accuracy):
-
-    def __init__(self):
-        
-        # Create precision property
-        self.precision = None
-
-    # Calculates precision value
-    # based on passed in ground truth
-    def init(self, y, reinit=False):
-        if self.precision is None or reinit:
-            self.precision = np.std(y) / 250
-    
-    # Compares predictions to the ground truth tables
-    def compare(self, predicitions, y):
-        return np.absolute(predicitions - y) < self.precision
+        # Print a summary
+        print(f'validation, ' +
+            f'acc: {validation_accuracy:.3f} , ' +
+            f'loss: {validation_loss:.3f} ' )
 
 
-# Accuracy calculation for binary logistic clasification model
-class Accuracy_Binary(Accuracy):
-
-    # No initialization is needed
-    def init(self, y):
-        pass
-    # Compares predictions to the ground truth values 
-    def compare(self, predictions, y):
-        if len(y.shape) == 2:
-            y = np.argmax(y, axis=1)
-        return predictions == y
-
-# Accuracy calculation for classification model 
-class Accuracy_Categorical(Accuracy):
-
-    # No initialization is needed
-    def init(self, y):
-        pass
-
-    # Compares predictions to the ground truth values 
-    def compare(self, predictions, y):
-        if len(y.shape) == 2:
-            y = np.argmax(y, axis=1)
-        return predictions == y
