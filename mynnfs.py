@@ -1,9 +1,7 @@
-
-from random import sample
-from turtle import forward
-from xml.etree.ElementInclude import include
 import numpy as np
-
+# Using pickle to serialize objects into a binary representation 
+# (we can save python objects in a file)
+import pickle
 
 #  LAYERS 
 class Layer_Dense:
@@ -994,3 +992,10 @@ class Model:
         for parameter_set, layer in zip(parameters, self.trainable_layers):
             layer.set_parameters(*parameter_set)
 
+    # Save the parameters to a file
+    def save_parameters(self, path):
+
+        # Open a file in the binary-write mode
+        # and save parameters to it
+        with open(path, 'wb') as f:
+            pickle.dumb(self.get_parameters(), f)
